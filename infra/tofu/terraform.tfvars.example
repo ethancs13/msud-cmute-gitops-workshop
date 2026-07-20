@@ -1,5 +1,5 @@
 do_token     = "dop_v1_your_token_here"
-cluster_name = "paper-<YOUR_NAME>"
+cluster_name = "paper-<YOUR_GITHUB_USERNAME>"
 vpc_uuid     = "9190e0e9-f6dd-41e1-aa57-8d8fb2269ba4"
 region       = "sfo3"
 k8s_version  = "1.36.0-do.3"

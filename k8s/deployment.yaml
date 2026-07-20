@@ -20,6 +20,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: paper
+          # Replace <YOUR_GITHUB_USERNAME> 
           # MAKE SURE THIS IS LOWERCASE OTHERWISE YOU'LL GET AN ERROR :) 
           image: ghcr.io/<YOUR_GITHUB_USERNAME>/msud-cmute-gitops-workshop:latest
           ports:

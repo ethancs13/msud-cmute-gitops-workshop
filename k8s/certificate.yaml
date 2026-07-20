@@ -3,12 +3,12 @@ kind: Certificate
 metadata:
   name: paper-tls
 spec:
-  # Replace <YOUR_NAME> with the same value used in your DNS record.
+  # Replace <YOUR_GITHUB_USERNAME> with the same value used in your DNS record.
   # Note: Minecraft is plain TCP and does not consume this cert. It is here
   # to demonstrate the cert-manager + DNS-01 flow end to end.
   secretName: paper-tls
   dnsNames:
-    - <YOUR_NAME>.mc.labs.cmute.cloud
+    - <YOUR_GITHUB_USERNAME>.mc.labs.cmute.cloud
   issuerRef:
     name: letsencrypt-do
     kind: ClusterIssuer
@@ -18,11 +18,11 @@ kind: Certificate
 metadata:
   name: argocd-tls
 spec:
-  # Replace <YOUR_NAME>. This cert IS used by the Gateway's HTTPS listener
+  # Replace <YOUR_GITHUB_USERNAME>. This cert IS used by the Gateway's HTTPS listener
   # to terminate TLS for the ArgoCD UI.
   secretName: argocd-tls
   dnsNames:
-    - argocd.<YOUR_NAME>.mc.labs.cmute.cloud
+    - argocd.<YOUR_GITHUB_USERNAME>.mc.labs.cmute.cloud
   issuerRef:
     name: letsencrypt-do
     kind: ClusterIssuer

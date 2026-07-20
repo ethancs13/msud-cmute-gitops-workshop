@@ -29,9 +29,10 @@ Deploy a PaperMC Minecraft server to DigitalOcean Kubernetes using GitOps princi
 - A DigitalOcean API token
 
 ### Note About Minecraft Version
-**Note:** The server runs Minecraft **1.21.11**. 
 
-In the Minecraft Launcher, create an installation for version 1.21.11 (Installations → New installation) and use it to connect, the latest client version will not join a 1.21.11 server.
+**Note:** The server runs Minecraft **1.21.11**.
+
+In the Minecraft Launcher, create an installation for version 1.21.11 (Installations → New installation) and use it to connect. The latest client version will not join a 1.21.11 server.
 
 ## Lab Environment Setup
 
@@ -42,6 +43,8 @@ In the Minecraft Launcher, create an installation for version 1.21.11 (Installat
 2. GitHub disables workflows on forks by default. Go to the **Actions** tab in your fork and click **"I understand my workflows, enable them"**.
 
 3. The workflow runs two jobs on every push: `secret-scan` and `build`. The `secret-scan` job uses [TruffleHog](https://github.com/trufflesecurity/trufflehog) to scan your git history for leaked credentials (like your DigitalOcean token) and blocks the build if it finds any. Make a small commit to `main` to trigger the workflow, then verify both jobs pass. Once complete, your container image will be available at `ghcr.io/<your-github-username>/msud-cmute-gitops-workshop:latest`.
+
+4. By default, the package GitHub builds is **private** and your cluster will not be able to pull it. Go to your fork's **Packages** → `msud-cmute-gitops-workshop` → **Package settings** → **Change visibility** → **Public**.
 
 ### Provision your cluster
 
@@ -68,6 +71,8 @@ tofu plan
 tofu apply
 ```
 
+Cluster creation takes **~8 minutes**. Grab some water.
+
 5. Save your kubeconfig:
 
 ```bash
@@ -91,17 +96,36 @@ You should see a single node in `Ready` status.
 Example:
 
 ```bash
-NAME            STATUS   ROLES    AGE     VERSION
-default-1x8h9   Ready    <none>   2m59s   v1.36.0
+NAME             STATUS   ROLES    AGE   VERSION
+default-37gop8   Ready    <none>   14m   v1.36.0
 ```
 
 ### Bootstrap cluster infrastructure
 
-1. Install Envoy and the Gateway API CRDs:
+1. Install the Gateway API CRDs and Envoy Gateway:
 
 ```bash
 kubectl apply --server-side --force-conflicts \
   -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.5.1/experimental-install.yaml
+```
+
+You should see:
+
+```bash
+customresourcedefinition.apiextensions.k8s.io/backendtlspolicies.gateway.networking.k8s.io serverside-applied
+customresourcedefinition.apiextensions.k8s.io/gatewayclasses.gateway.networking.k8s.io serverside-applied
+customresourcedefinition.apiextensions.k8s.io/gateways.gateway.networking.k8s.io serverside-applied
+customresourcedefinition.apiextensions.k8s.io/grpcroutes.gateway.networking.k8s.io serverside-applied
+customresourcedefinition.apiextensions.k8s.io/httproutes.gateway.networking.k8s.io serverside-applied
+customresourcedefinition.apiextensions.k8s.io/listenersets.gateway.networking.k8s.io serverside-applied
+customresourcedefinition.apiextensions.k8s.io/referencegrants.gateway.networking.k8s.io serverside-applied
+customresourcedefinition.apiextensions.k8s.io/tcproutes.gateway.networking.k8s.io serverside-applied
+customresourcedefinition.apiextensions.k8s.io/tlsroutes.gateway.networking.k8s.io serverside-applied
+customresourcedefinition.apiextensions.k8s.io/udproutes.gateway.networking.k8s.io serverside-applied
+validatingadmissionpolicy.admissionregistration.k8s.io/safe-upgrades.gateway.networking.k8s.io serverside-applied
+validatingadmissionpolicybinding.admissionregistration.k8s.io/safe-upgrades.gateway.networking.k8s.io serverside-applied
+customresourcedefinition.apiextensions.k8s.io/xbackendtrafficpolicies.gateway.networking.x-k8s.io serverside-applied
+customresourcedefinition.apiextensions.k8s.io/xmeshes.gateway.networking.x-k8s.io serverside-applied
 ```
 
 ```bash
@@ -114,6 +138,18 @@ helm install eg oci://docker.io/envoyproxy/gateway-helm \
 
 ```bash
 kubectl apply -f infra/envoy-gateway/gatewayclass.yaml
+```
+
+Verify Envoy Gateway is running and the GatewayClass is accepted:
+
+```bash
+kubectl get pods -n envoy-gateway-system
+kubectl get gatewayclass eg
+```
+
+```bash
+NAME   CONTROLLER                                      ACCEPTED   AGE
+eg     gateway.envoyproxy.io/gatewayclass-controller   True       14s
 ```
 
 2. Install cert-manager:
@@ -149,10 +185,9 @@ kubectl create namespace argocd
 kubectl apply -n argocd --server-side -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 ```
 
-5. Verify everything is running:
+5. Verify ArgoCD is running:
 
 ```bash
-kubectl get pods -n envoy-gateway-system
 kubectl wait --for=condition=available deployment/argocd-server -n argocd --timeout=120s
 ```
 
@@ -180,7 +215,7 @@ kubectl apply -f k8s/argocd-httproute.yaml
    - `namespace.yaml`
    - `configmap.yaml`
    - `persistentvolumeclaim.yaml`
-   - `deployment.yaml` IMPORTANT: replace `<YOUR_GITHUB_USERNAME>` with your GitHub username
+   - `deployment.yaml` IMPORTANT: replace `<YOUR_GITHUB_USERNAME>` with your GitHub username (must be lowercase)
    - `service.yaml`
    - `gateway.yaml` IMPORTANT: replace `<YOUR_NAME>` in the ArgoCD HTTPS listener hostname
    - `tcproute.yaml`
@@ -188,7 +223,13 @@ kubectl apply -f k8s/argocd-httproute.yaml
 
 2. In `argocd/application.yaml`, look at the file and replace `<YOUR_GITHUB_USERNAME>` with your GitHub username.
 
-3. Commit and push:
+3. Check that you didn't miss any placeholders:
+
+```bash
+grep -rn "YOUR_NAME\|YOUR_GITHUB" k8s/ argocd/ && echo "^^ FIX THESE BEFORE CONTINUING" || echo "all placeholders replaced"
+```
+
+4. Commit and push:
 
 ```bash
 git add -A
@@ -196,18 +237,20 @@ git commit -m "chore: configure k8s manifests with my values"
 git push
 ```
 
-4. Apply the ArgoCD application:
+5. Apply the ArgoCD application:
 
 ```bash
 kubectl apply -f argocd/application.yaml
 ```
 
-5. Watch ArgoCD deploy everything:
+6. Watch ArgoCD deploy everything:
 
 ```bash
 kubectl get applications -n argocd
 kubectl get pods -n paper
 ```
+
+The paper pod takes **1–2 minutes** to become `1/1 Ready` (the startup probe waits for the Minecraft server to boot).
 
 ### Expose the server
 
@@ -219,7 +262,21 @@ All traffic (Minecraft and the ArgoCD UI) flows through the single Gateway LoadB
 kubectl get gateway paper-gateway -n paper
 ```
 
-2. Create a DNS record for ArgoCD pointing to the Gateway IP:
+The `ADDRESS` field takes **1–3 minutes** to appear while DigitalOcean provisions the load balancer. Your certificates take another 1–3 minutes to become Ready — check with:
+
+```bash
+kubectl get certificates -n paper
+```
+
+2. (Optional) Verify the Minecraft port is reachable through the Gateway:
+
+```bash
+timeout 3 bash -c '</dev/tcp/<GATEWAY_EXTERNAL_IP>/25565' && echo OPEN || echo CLOSED
+```
+
+If this prints `OPEN`, Envoy is routing TCP traffic to your server. If it prints `CLOSED`, wait a minute and try again before debugging.
+
+3. Create a DNS record for ArgoCD pointing to the Gateway IP:
 
 ```bash
 doctl compute domain records create cmute.cloud \
@@ -229,7 +286,7 @@ doctl compute domain records create cmute.cloud \
   --record-ttl 300
 ```
 
-3. Create a DNS record for your Minecraft server pointing to the **same** Gateway IP:
+4. Create a DNS record for your Minecraft server pointing to the **same** Gateway IP:
 
 ```bash
 doctl compute domain records create cmute.cloud \
@@ -239,13 +296,13 @@ doctl compute domain records create cmute.cloud \
   --record-ttl 300
 ```
 
-4. Get the initial ArgoCD admin password and log in at `https://argocd.<YOUR_NAME>.mc.labs.cmute.cloud`:
+5. Get the initial ArgoCD admin password and log in at `https://argocd.<YOUR_NAME>.mc.labs.cmute.cloud`:
 
 ```bash
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d; echo
 ```
 
-5. Connect with your Minecraft client to `<YOUR_NAME>.mc.labs.cmute.cloud`.
+6. Connect with your Minecraft client (version **1.21.11**) to `<YOUR_NAME>.mc.labs.cmute.cloud`.
 
 ### Test GitOps
 
@@ -263,7 +320,7 @@ Make a change and watch ArgoCD sync it automatically.
 kubectl get pods -n paper
 ```
 
-ArgoCD will detect the changes and roll out a new pod automatically.
+Within about 3 minutes, ArgoCD will detect the change and roll out a new pod automatically. You'll briefly be disconnected from the server while the pod restarts — that's the deployment happening. Watch it live in the ArgoCD UI.
 
 ## Extras
 
@@ -271,9 +328,4 @@ Add Prometheus metrics and a Grafana dashboard for your server: [extras/observab
 
 ## Cleanup
 
-Destroy your cluster when you're done:
-
-```bash
-cd infra/tofu
-tofu destroy
-```
+Cluster teardown is handled by the instructor after the workshop. Leave your cluster running.
