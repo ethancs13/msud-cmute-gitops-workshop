@@ -8,7 +8,7 @@ spec:
   # to demonstrate the cert-manager + DNS-01 flow end to end.
   secretName: paper-tls
   dnsNames:
-    - <YOUR_NAME>.mc.labs.cmute.cloud
+    - test.mc.labs.cmute.cloud
   issuerRef:
     name: letsencrypt-do
     kind: ClusterIssuer

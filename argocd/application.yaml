@@ -10,7 +10,7 @@ spec:
     repoURL: https://github.com/xata/msud-cmute-gitops-workshop.git
     # Replace main with your branch if you made a specific branch
     # You will have to update the CI workflow to use the branch
-    targetRevision: main
+    targetRevision: test
     path: k8s
   destination:
     server: https://kubernetes.default.svc
