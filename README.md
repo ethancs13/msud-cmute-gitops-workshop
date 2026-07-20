@@ -28,15 +28,20 @@ Deploy a PaperMC Minecraft server to DigitalOcean Kubernetes using GitOps princi
 - A GitHub account
 - A DigitalOcean API token
 
+### Note About Minecraft Version
+**Note:** The server runs Minecraft **1.21.11**. 
+
+In the Minecraft Launcher, create an installation for version 1.21.11 (Installations → New installation) and use it to connect, the latest client version will not join a 1.21.11 server.
+
 ## Lab Environment Setup
 
 ### Fork the repository
 
 1. Fork this repository to your GitHub account.
 
-2. In your fork, go to `.github/workflows/build.yaml` and uncomment the entire file.
+2. GitHub disables workflows on forks by default. Go to the **Actions** tab in your fork and click **"I understand my workflows, enable them"**.
 
-3. Commit and push to `main`. Go to the **Actions** tab in your fork and verify the workflow runs successfully. Once complete, your container image will be available at `ghcr.io/<your-github-username>/msud-cmute-gitops-workshop:latest`.
+3. The workflow runs two jobs on every push: `secret-scan` and `build`. The `secret-scan` job uses [TruffleHog](https://github.com/trufflesecurity/trufflehog) to scan your git history for leaked credentials (like your DigitalOcean token) and blocks the build if it finds any. Make a small commit to `main` to trigger the workflow, then verify both jobs pass. Once complete, your container image will be available at `ghcr.io/<your-github-username>/msud-cmute-gitops-workshop:latest`.
 
 ### Provision your cluster
 
@@ -69,7 +74,7 @@ tofu apply
 doctl kubernetes cluster kubeconfig save paper-<YOUR_NAME>
 ```
 
-Example: 
+Example:
 
 ```bash
 doctl kubernetes cluster kubeconfig save paper-test
@@ -87,12 +92,12 @@ Example:
 
 ```bash
 NAME            STATUS   ROLES    AGE     VERSION
-default-1x8h9   Ready    <none>   2m59s   v1.35.1
+default-1x8h9   Ready    <none>   2m59s   v1.36.0
 ```
 
 ### Bootstrap cluster infrastructure
 
-1. Install Envoy and the Gateway API CRDs: 
+1. Install Envoy and the Gateway API CRDs:
 
 ```bash
 kubectl apply --server-side --force-conflicts \
@@ -164,7 +169,7 @@ kubectl wait --for=condition=available deployment/argocd-server -n argocd --time
 
 ### Prepare ArgoCD for the shared Gateway
 
-The single `paper-gateway` (defined in `k8s/gateway.yaml`) has three listeners: a TCP listener for Minecraft, an HTTPS listener for the ArgoCD UI, and an HTTPS listener for Grafana. They share the same LoadBalancer IP.
+The single `paper-gateway` (defined in `k8s/gateway.yaml`) has two listeners: a TCP listener for Minecraft and an HTTPS listener for the ArgoCD UI. They share the same LoadBalancer IP.
 
 1. Tell ArgoCD not to terminate TLS itself (the Gateway does it):
 
@@ -188,7 +193,7 @@ kubectl apply -f k8s/argocd-httproute.yaml
    - `persistentvolumeclaim.yaml`
    - `deployment.yaml` IMPORTANT: replace `<YOUR_GITHUB_USERNAME>` with your GitHub username
    - `service.yaml`
-   - `gateway.yaml` IMPORTANT: replace `<YOUR_NAME>` in all HTTPS listener hostnames (ArgoCD and Grafana)
+   - `gateway.yaml` IMPORTANT: replace `<YOUR_NAME>` in the ArgoCD HTTPS listener hostname
    - `tcproute.yaml`
    - `certificate.yaml` IMPORTANT: replace `<YOUR_NAME>` in both certs (matches your DNS records below)
 
@@ -217,24 +222,30 @@ kubectl get pods -n paper
 
 ### Expose the server
 
-1. Get your Gateway's external IP (used for ArgoCD):
+All traffic (Minecraft and the ArgoCD UI) flows through the single Gateway LoadBalancer.
+
+1. Get your Gateway's external IP:
 
 ```bash
 kubectl get gateway paper-gateway -n paper
 ```
 
-2. Get your Minecraft service IP:
-
-```bash
-kubectl get svc paper -n paper
-```
-
-3. Create a DNS record for ArgoCD pointing to the **Gateway IP**:
+2. Create a DNS record for ArgoCD pointing to the Gateway IP:
 
 ```bash
 doctl compute domain records create cmute.cloud \
   --record-type A \
   --record-name "argocd.<YOUR_NAME>.mc.labs" \
+  --record-data <GATEWAY_EXTERNAL_IP> \
+  --record-ttl 300
+```
+
+3. Create a DNS record for your Minecraft server pointing to the **same** Gateway IP:
+
+```bash
+doctl compute domain records create cmute.cloud \
+  --record-type A \
+  --record-name "<YOUR_NAME>.mc.labs" \
   --record-data <GATEWAY_EXTERNAL_IP> \
   --record-ttl 300
 ```
@@ -245,7 +256,7 @@ doctl compute domain records create cmute.cloud \
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d; echo
 ```
 
-5. Connect with your Minecraft client to the Minecraft service IP from step 2.
+5. Connect with your Minecraft client to `<YOUR_NAME>.mc.labs.cmute.cloud`.
 
 ### Test GitOps
 
@@ -264,6 +275,10 @@ kubectl get pods -n paper
 ```
 
 ArgoCD will detect the changes and roll out a new pod automatically.
+
+## Extras
+
+Add Prometheus metrics and a Grafana dashboard for your server: [extras/observability](extras/observability/README.md)
 
 ## Cleanup
 

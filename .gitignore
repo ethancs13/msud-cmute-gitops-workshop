@@ -142,5 +142,6 @@ NOTES.md
 *.backup
 .archive/
 
+
 # SBOM and CVE scan reports (contain version fingerprints)
 reports/

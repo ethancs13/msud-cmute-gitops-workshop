@@ -5,7 +5,7 @@ metadata:
   labels:
     app: paper
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: paper
   ports:

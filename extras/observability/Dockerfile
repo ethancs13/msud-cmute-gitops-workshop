@@ -14,7 +14,12 @@ RUN DOWNLOAD_URL=$(curl -s -H "User-Agent: msud-workshop-student (https://github
     && echo "Downloading: ${DOWNLOAD_URL}" \
     && curl -fo paper.jar -H "User-Agent: msud-workshop-student (https://github.com/msu-denver)" "${DOWNLOAD_URL}"
 
+# Exposes on: localhost:9940/metrics
+RUN mkdir -p plugins && \
+    curl -fL -o plugins/prometheus-exporter.jar \
+    https://github.com/sladkoff/minecraft-prometheus-exporter/releases/download/v3.1.2/minecraft-prometheus-exporter-3.1.2.jar
+
 RUN echo "eula=true" > eula.txt
 
-EXPOSE 25565
+EXPOSE 25565 9940
 CMD ["java", "-Xms1G", "-Xmx2G", "-jar", "paper.jar", "--nogui"]

@@ -22,14 +22,3 @@ spec:
       allowedRoutes:
         namespaces:
           from: All
-    - name: grafana-https
-      protocol: HTTPS
-      port: 443
-      hostname: grafana.<YOUR_NAME>.mc.labs.cmute.cloud
-      tls:
-        mode: Terminate
-        certificateRefs:
-          - name: grafana-tls
-      allowedRoutes:
-        namespaces:
-          from: All

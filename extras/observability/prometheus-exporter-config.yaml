@@ -2,7 +2,6 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: prometheus-exporter-config
-  namespace: paper
 data:
   config.yml: |
     host: 0.0.0.0

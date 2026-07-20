@@ -12,6 +12,7 @@ variable "cluster_name" {
 variable "vpc_uuid" {
   description = "UUID of the existing VPC (run: doctl vpcs list)"
   type        = string
+  default     = "9190e0e9-f6dd-41e1-aa57-8d8fb2269ba4"
 }
 
 variable "region" {
@@ -23,7 +24,7 @@ variable "region" {
 variable "k8s_version" {
   description = "Kubernetes version"
   type        = string
-  default     = "1.34.1-do.2"
+  default     = "1.36.0-do.3"
 }
 
 variable "node_size" {
