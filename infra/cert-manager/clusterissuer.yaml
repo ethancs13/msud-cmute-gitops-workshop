@@ -5,7 +5,7 @@ metadata:
 spec:
   acme:
     server: https://acme-v02.api.letsencrypt.org/directory
-    email: <YOUR_EMAIL>
+    email: mwal@msudenver.edu
     privateKeySecretRef:
       name: letsencrypt-do
     solvers:

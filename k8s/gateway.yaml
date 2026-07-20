@@ -14,7 +14,7 @@ spec:
     - name: argocd-https
       protocol: HTTPS
       port: 443
-      hostname: argocd.<YOUR_NAME>.mc.labs.cmute.cloud
+      hostname: argocd.test.mc.labs.cmute.cloud
       tls:
         mode: Terminate
         certificateRefs:

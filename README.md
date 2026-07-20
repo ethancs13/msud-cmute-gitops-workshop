@@ -116,6 +116,13 @@ helm install eg oci://docker.io/envoyproxy/gateway-helm \
 kubectl apply -f infra/envoy-gateway/gatewayclass.yaml
 ```
 
+You can verify that Envoy Gateway is working by running:
+
+```bash
+kubectl get pods -n envoy-gateway-system
+kubectl get gatewayclass eg
+```
+
 2. Install cert-manager:
 
 ```bash

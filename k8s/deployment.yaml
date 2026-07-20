@@ -21,7 +21,7 @@ spec:
       containers:
         - name: paper
           # MAKE SURE THIS IS LOWERCASE OTHERWISE YOU'LL GET AN ERROR :) 
-          image: ghcr.io/<YOUR_GITHUB_USERNAME>/msud-cmute-gitops-workshop:latest
+          image: ghcr.io/xata/msud-cmute-gitops-workshop:latest
           ports:
             - containerPort: 25565
           resources:
