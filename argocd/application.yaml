@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     # Replace <YOUR_GITHUB_USERNAME> with your GitHub username.
-    repoURL: https://github.com/<YOUR_GITHUB_USERNAME>/msud-cmute-gitops-workshop.git
+    repoURL: https://github.com/ethancs13/msud-cmute-gitops-workshop.git
     # Replace main with your branch if you made a specific branch
     # You will have to update the CI workflow to use the branch
     targetRevision: main

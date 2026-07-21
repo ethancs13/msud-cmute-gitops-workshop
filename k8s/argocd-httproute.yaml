@@ -9,7 +9,7 @@ spec:
       namespace: paper
       sectionName: argocd-https
   hostnames:
-    - argocd.<YOUR_GITHUB_USERNAME>.mc.labs.cmute.cloud
+    - argocd.ethancs13.mc.labs.cmute.cloud
   rules:
     - backendRefs:
         - name: argocd-server
