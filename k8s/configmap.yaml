@@ -6,7 +6,7 @@ data:
   server.properties: |
     server-port=25565
     motd=A Minecraft Server on k8s
-    max-players=3
+    max-players=50
     # online-mode=false lets any Minecraft client connect without a Mojang
     # account check. This is fine for a workshop, but never use it on a
     # public server: anyone can join while impersonating any username.
